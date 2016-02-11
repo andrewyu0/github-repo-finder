@@ -10,16 +10,27 @@ import UIKit
 import MBProgressHUD
 
 // Main ViewController
-class RepoResultsViewController: UIViewController {
+class RepoResultsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
     var searchBar: UISearchBar!
     var searchSettings = GithubRepoSearchSettings()
 
-    var repos: [GithubRepo]!
+    var repos: [GithubRepo]?
 
+    @IBOutlet weak var tableView: UITableView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        repos = []
 
+
+        tableView.estimatedRowHeight = 100
+        tableView.rowHeight = UITableViewAutomaticDimension
+        
+        tableView.dataSource = self
+        tableView.delegate = self
+        
         // Initialize the UISearchBar
         searchBar = UISearchBar()
         searchBar.delegate = self
@@ -43,14 +54,66 @@ class RepoResultsViewController: UIViewController {
             // Print the returned repositories to the output window
             for repo in newRepos {
                 print(repo)
-            }   
+                // Append to repos
+                self.repos?.append(repo)
+            }
+            
+            self.tableView.reloadData()
 
             MBProgressHUD.hideHUDForView(self.view, animated: true)
             }, error: { (error) -> Void in
                 print(error)
         })
     }
+
+
+    
+    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return repos?.count ?? 0
+    }
+    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCellWithIdentifier("RepoCell", forIndexPath: indexPath) as! RepoCell
+
+        var avatarNSUrl : NSURL!
+        if let repo = repos?[indexPath.row] {
+
+            if let avatarUrl = repo.ownerAvatarURL {
+                avatarNSUrl = NSURL(string: avatarUrl)
+            }
+            
+            // set properties
+            cell.avatarImageView.setImageWithURL(avatarNSUrl!)
+//            var name: String?
+//            var ownerHandle: String?
+//            var ownerAvatarURL: String?
+//            var stars: Int?
+//            var forks: Int?
+//
+            cell.repoNameLabel.text = repo.name
+            cell.userLabel.text = repo.ownerHandle
+            cell.starsLabel.text = String(repo.stars!)
+            cell.forksLabel.text = String(repo.forks!)
+            cell.descriptionLabel.text = repo.repoDescription
+            
+        }
+        
+        
+        
+        return cell
+    }
+
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        let navigationController = segue.destinationViewController as! UINavigationController
+        let settingsViewController = navigationController.topViewController as! SettingsViewController
+        
+        
+
+    }
+    
 }
+
+
+
 
 // SearchBar methods
 extension RepoResultsViewController: UISearchBarDelegate {
